@@ -1,0 +1,42 @@
+dataset: "clothing1m"
+data_path: "./data/clothing1M"
+num_class: 14
+model: clip
+backbone: "ViT-B/16"
+resolution: 224
+
+seed: 0
+gpuid: 0
+num_workers: 8
+
+epochs: 10
+warmup: 1
+batch_size: 32
+lr: 5e-4
+weight_decay: 5e-4
+momentum: 0.9
+lnl_methods: "CE"
+
+finetune: True
+
+N_CTX: 16
+CLASS_TOKEN_POSITION: "end"
+
+noise_ratio: 0.385
+
+class_names: [
+  'T-Shirt',
+  'Shirt',
+  'Knitwear',
+  'Chiffon',
+  'Sweater',
+  'Hoodie',
+  'Windbreaker',
+  'Jacket',
+  'Downcoat',
+  'Suit',
+  'Shawl',
+  'Dress',
+  'Vest',
+  'Underwear'
+]

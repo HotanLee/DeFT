@@ -1,0 +1,79 @@
+dataset: "webvision"
+data_path: "./data/webvision/"
+num_class: 50
+model: clip
+backbone: "ViT-B/16"
+resolution: 224
+
+seed: 0
+gpuid: 0
+num_workers: 8
+
+epochs: 10
+warmup: 5
+batch_size: 64
+lr: 0.03
+weight_decay: 5e-4
+momentum: 0.9
+lnl_methods: "CE"
+
+vpt_deep: True
+vpt_len: 20
+
+N_CTX: 16
+CLASS_TOKEN_POSITION: "end"
+
+noise_ratio: 0.2
+
+class_names: [
+  "tench", 
+  "goldfish", 
+  "great white shark", 
+  "tiger shark", 
+  "hammerhead shark", 
+  "electric ray", 
+  "stingray", 
+  "rooster", 
+  "hen", 
+  "ostrich", 
+  "brambling", 
+  "goldfinch", 
+  "house finch", 
+  "junco", 
+  "indigo bunting", 
+  "American robin", 
+  "bulbul", 
+  "jay", 
+  "magpie", 
+  "chickadee", 
+  "American dipper", 
+  "kite (bird of prey)", 
+  "bald eagle", 
+  "vulture", 
+  "great grey owl", 
+  "fire salamander", 
+  "smooth newt", 
+  "newt", 
+  "spotted salamander", 
+  "axolotl", 
+  "American bullfrog", 
+  "tree frog", 
+  "tailed frog", 
+  "loggerhead sea turtle", 
+  "leatherback sea turtle",
+  "mud turtle", 
+  "terrapin", 
+  "box turtle", 
+  "banded gecko", 
+  "green iguana", 
+  "Carolina anole", 
+  "desert grassland whiptail lizard", 
+  "agama", 
+  "frilled-necked lizard", 
+  "alligator lizard", 
+  "Gila monster", 
+  "European green lizard", 
+  "chameleon", 
+  "Komodo dragon", 
+  "Nile crocodile"
+]
