@@ -69,6 +69,42 @@ class ImageDataset(torch.utils.data.Dataset):
 
             if os.path.exists(noise_file):
                 noise_label = json.load(open(noise_file,"r"))
+            elif noise_mode == 'idn':
+                images = pd.read_csv(os.path.join(self.root, 'images.txt'), sep=' ',
+                                        names=['img_id', 'filepath'])
+                image_class_labels = pd.read_csv(os.path.join(self.root, 'image_class_labels.txt'),
+                                                    sep=' ', names=['img_id', 'target'])
+                train_test_split = pd.read_csv(os.path.join(self.root, 'train_test_split.txt'),
+                                                sep=' ', names=['img_id', 'is_training_img'])
+
+                data_idn = images.merge(image_class_labels, on='img_id')
+                data_idn = data_idn.merge(train_test_split, on='img_id')
+                data_tmp = data_idn[data_idn.is_training_img == 1]
+                data_idn = []
+                label_idn = []
+                for i in range(len(data_tmp)):
+                    data_idn.append(os.path.join(self.root, "images", data_tmp.iloc[i].filepath))
+                    label_idn.append(int(data_tmp.iloc[i].target - 1))
+
+                print("image loaded")
+                resized_img = []
+                for img_path in data_idn:
+                    img = cv2.imread(img_path)
+                    img = cv2.resize(img, (64, 64))
+                    img = img[:, :, ::-1] # BGR to RGB.
+                    img = np.expand_dims(np.array(Image.fromarray(img)), 0)
+                    resized_img.append(img)
+
+                resized_img = np.concatenate(resized_img)
+                print("shape of data: ", resized_img.shape)
+                data_idn = torch.from_numpy(resized_img).float()
+                targets = torch.from_numpy(np.array(label_idn))
+                dataset = zip(data_idn, targets)
+                print("generating noisy labels...")
+                print("Noise_ratio: ", noise_ratio)
+                noise_label = self.get_instance_noisy_label(noise_ratio, dataset, targets, self.num_class)
+                print("save noisy labels to %s ..."%noise_file)
+                json.dump(noise_label,open(noise_file,"w"))
             else:
                 noise_label = []
                 idx = list(range(data_num))
@@ -98,6 +134,57 @@ class ImageDataset(torch.utils.data.Dataset):
         else:
             self.data = data
             self.label = label
+
+    def get_instance_noisy_label(self, n, dataset, labels, num_classes, feature_size=3*64*64, norm_std=0.1, seed=1): 
+        from math import inf
+        from scipy import stats
+
+        print("building dataset...")
+        label_num = num_classes
+        np.random.seed(int(seed))
+        torch.manual_seed(int(seed))
+        torch.cuda.manual_seed(int(seed))
+
+        P = []
+        flip_distribution = stats.truncnorm((0 - n) / norm_std, (1 - n) / norm_std, loc=n, scale=norm_std)
+        flip_rate = flip_distribution.rvs(labels.shape[0])
+
+        if isinstance(labels, list):
+            labels = torch.FloatTensor(labels)
+        labels = labels.cuda()
+
+        W = np.random.randn(label_num, feature_size, label_num)
+
+
+        W = torch.FloatTensor(W).cuda()
+        for i, (x, y) in enumerate(dataset):
+            # 1*m *  m*10 = 1*10
+            x = x.cuda()
+            A = x.view(1, -1).mm(W[y]).squeeze(0)
+            A[y] = -inf
+            A = flip_rate[i] * torch.nn.functional.softmax(A, dim=0)
+            A[y] += 1 - flip_rate[i]
+            P.append(A)
+        P = torch.stack(P, 0).cpu().numpy()
+        l = [i for i in range(label_num)]
+        new_label = [int(np.random.choice(l, p=P[i])) for i in range(labels.shape[0])]
+        record = [[0 for _ in range(label_num)] for i in range(label_num)]
+
+        for a, b in zip(labels, new_label):
+            a, b = int(a), int(b)
+            record[a][b] += 1
+
+
+        pidx = np.random.choice(range(P.shape[0]), 1000)
+        cnt = 0
+        for i in range(1000):
+            if labels[pidx[i]] == 0:
+                a = P[pidx[i], :]
+                cnt += 1
+            if cnt >= 10:
+                break
+
+        return new_label 
 
     def _load_metadata(self):
         images = pd.read_csv(os.path.join(self.root, 'images.txt'), sep=' ',
