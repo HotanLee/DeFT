@@ -11,7 +11,7 @@ num_workers: 8
 
 epochs: 10
 warmup: 1
-batch_size: 32
+batch_size: 64
 lr: 5e-4
 weight_decay: 5e-4
 momentum: 0.9
